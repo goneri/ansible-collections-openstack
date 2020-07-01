@@ -85,10 +85,11 @@ private_key:
     type: str
 '''
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.openstack.cloud.plugins.module_utils.init import (
+    AnsibleTurboModule,
+)
 from ansible_collections.openstack.cloud.plugins.module_utils.openstack import (openstack_full_argument_spec,
-                                                                                openstack_module_kwargs,
-                                                                                openstack_cloud_from_module)
+                                                                                openstack_module_kwargs)
 
 
 def _system_state_change(module, keypair):
@@ -112,10 +113,16 @@ def main():
     module_kwargs = openstack_module_kwargs(
         mutually_exclusive=[['public_key', 'public_key_file']])
 
-    module = AnsibleModule(argument_spec,
+    module = AnsibleTurboModule(
+                           module_name="os_keypair",
+                           collection_name="openstack.cloud",
+                           argument_spec=argument_spec,
                            supports_check_mode=True,
                            **module_kwargs)
+    module.run()
 
+
+def entry_point(module, sdk, cloud):
     state = module.params['state']
     name = module.params['name']
     public_key = module.params['public_key']
@@ -124,7 +131,7 @@ def main():
         with open(module.params['public_key_file']) as public_key_fh:
             public_key = public_key_fh.read().rstrip()
 
-    sdk, cloud = openstack_cloud_from_module(module)
+
     try:
         keypair = cloud.get_keypair(name)
 
