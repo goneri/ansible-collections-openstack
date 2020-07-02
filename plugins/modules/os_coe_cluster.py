@@ -212,10 +212,11 @@ EXAMPLES = '''
     node_count: 5
 '''
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.openstack.cloud.plugins.module_utils.init import (
+    AnsibleTurboModule,
+)
 from ansible_collections.openstack.cloud.plugins.module_utils.openstack import (openstack_full_argument_spec,
-                                                                                openstack_module_kwargs,
-                                                                                openstack_cloud_from_module)
+                                                                                openstack_module_kwargs)
 
 
 def _parse_labels(labels):
@@ -246,8 +247,11 @@ def main():
         timeout=dict(type='int', default=60),
     )
     module_kwargs = openstack_module_kwargs()
-    module = AnsibleModule(argument_spec, **module_kwargs)
+    module = AnsibleTurboModule(argument_spec, **module_kwargs)
+    module.run()
 
+
+def entry_point(module, sdk, cloud):
     params = module.params.copy()
 
     state = module.params['state']
@@ -266,7 +270,6 @@ def main():
         create_timeout=module.params['timeout'],
     )
 
-    sdk, cloud = openstack_cloud_from_module(module)
     try:
         changed = False
         cluster = cloud.get_coe_cluster(name_or_id=name, filters={'cluster_template_id': cluster_template_id})

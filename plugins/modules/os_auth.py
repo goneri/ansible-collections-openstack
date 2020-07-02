@@ -46,10 +46,10 @@ service_catalog:
 
 import traceback
 
-from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.openstack.cloud.plugins.module_utils.openstack import (openstack_full_argument_spec,
-                                                                                openstack_module_kwargs,
-                                                                                openstack_cloud_from_module)
+from ansible_collections.openstack.cloud.plugins.module_utils.init import (
+    AnsibleTurboModule,
+)from ansible_collections.openstack.cloud.plugins.module_utils.openstack import (openstack_full_argument_spec,
+                                                                                openstack_module_kwargs)
 
 
 def main():
@@ -57,7 +57,10 @@ def main():
     argument_spec = openstack_full_argument_spec()
     module_kwargs = openstack_module_kwargs()
     module = AnsibleModule(argument_spec, **module_kwargs)
+    module.run()
 
+
+def entry_point(module, sdk, cloud):
     sdk, cloud = openstack_cloud_from_module(module)
     try:
         module.exit_json(

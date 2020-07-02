@@ -287,7 +287,9 @@ EXAMPLES = '''
     public: no
 '''
 
-from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.openstack.cloud.plugins.module_utils.init import (
+    AnsibleTurboModule,
+)
 from ansible_collections.openstack.cloud.plugins.module_utils.openstack import (openstack_full_argument_spec,
                                                                                 openstack_module_kwargs,
                                                                                 openstack_cloud_from_module)
@@ -335,7 +337,10 @@ def main():
     )
     module_kwargs = openstack_module_kwargs()
     module = AnsibleModule(argument_spec, **module_kwargs)
+    module = AnsibleTurboModule(argument_spec, **module_kwargs)
 
+
+def entry_point(module, sdk, cloud):
     params = module.params.copy()
 
     state = module.params['state']
@@ -367,7 +372,6 @@ def main():
         volume_driver=module.params['volume_driver'],
     )
 
-    sdk, cloud = openstack_cloud_from_module(module)
     try:
         changed = False
         template = cloud.get_coe_cluster_template(name_or_id=name, filters={'coe': coe, 'image_id': image_id})
