@@ -31,10 +31,13 @@ import abc
 import copy
 from distutils.version import StrictVersion
 import importlib
+import functools
 import os
 
-from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.six import iteritems
+
+from ansible_module.turbo.module import AnsibleTurboModule
+
 
 OVERRIDES = {'os_client_config': 'config',
              'os_endpoint': 'catalog_endpoint',
@@ -149,6 +152,12 @@ def openstack_module_kwargs(**kwargs):
     return ret
 
 
+@functools.lru_cache(maxsize=6)
+def _connect_sdk(**kwargs):
+    sdk = importlib.import_module('openstack')
+    return sdk, sdk.connect(**kwargs)
+
+
 # for compatibility with old versions
 def openstack_cloud_from_module(module, min_version='0.12.0'):
     try:
@@ -185,9 +194,9 @@ def openstack_cloud_from_module(module, min_version='0.12.0'):
             # For 'interface' parameter, fail if we receive a non-default value
             if module.params['interface'] != 'public':
                 module.fail_json(msg=fail_message.format(param='interface'))
-            return sdk, sdk.connect(**cloud_config)
+            return _connect_sdk(**cloud_config)
         else:
-            return sdk, sdk.connect(
+            return _connect_sdk(
                 cloud=cloud_config,
                 auth_type=module.params['auth_type'],
                 auth=module.params['auth'],
@@ -247,9 +256,10 @@ class OpenStackModule:
         Set up variables, connection to SDK and check if there are
         deprecated names.
         """
-        self.ansible = AnsibleModule(
+        self.ansible = AnsibleTurboModule(
             openstack_full_argument_spec(**self.argument_spec),
             **self.module_kwargs)
+
         self.params = self.ansible.params
         self.module_name = self.ansible._name
         self.sdk_version = None
@@ -350,7 +360,7 @@ class OpenStackModule:
                 interface=self.params['interface'],
             )
         try:
-            return sdk, sdk.connect(**cloud_config)
+            return _connect_sdk(**cloud_config)
         except sdk.exceptions.SDKException as e:
             # Probably a cloud configuration/login error
             self.fail_json(msg=str(e))
